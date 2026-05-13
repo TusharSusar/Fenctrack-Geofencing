@@ -4,6 +4,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import GeofenceSection from "../components/GeofenceSection";
+import FeaturesSection from "../components/FeaturesSection";
 
 // ── Carousel images: crowd/stampede/safety context ───────────────────────────
 // Using Unsplash with crowd/festival/safety keywords
@@ -108,23 +110,28 @@ function Stars({ count }) {
 // ── Infinite carousel component ────────────────────────────────────────────────
 function HeroCarousel() {
   const [current, setCurrent] = useState(0);
-  const [animating, setAnimating] = useState(false);
   const timerRef = useRef(null);
 
-  const goTo = (idx) => {
-    if (animating) return;
-    setAnimating(true);
-    setCurrent(idx);
-    setTimeout(() => setAnimating(false), 700);
+  const next = () => {
+    setCurrent(prev => (prev + 1) % CAROUSEL_IMAGES.length);
   };
 
-  const next = () => goTo((current + 1) % CAROUSEL_IMAGES.length);
-  const prev = () => goTo((current - 1 + CAROUSEL_IMAGES.length) % CAROUSEL_IMAGES.length);
+  const prev = () => {
+    setCurrent(prev =>
+      (prev - 1 + CAROUSEL_IMAGES.length) % CAROUSEL_IMAGES.length
+    );
+  };
 
+  const goTo = (idx) => {
+    setCurrent(idx);
+  };
+
+  // ✅ Auto scroll every 4.5s
   useEffect(() => {
-    timerRef.current = setInterval(next, 4500);
+    timerRef.current = setInterval(next, 1200);
+
     return () => clearInterval(timerRef.current);
-  }, [current]);
+  }, []); // ← only run once
 
   return (
     <div style={{
@@ -132,7 +139,6 @@ function HeroCarousel() {
       width: "100%",
       height: "100%",
       overflow: "hidden",
-      borderRadius: 0,
     }}>
       {CAROUSEL_IMAGES.map((img, i) => (
         <div
@@ -145,46 +151,17 @@ function HeroCarousel() {
             backgroundPosition: "center",
             opacity: i === current ? 1 : 0,
             transition: "opacity 0.7s ease",
-            zIndex: i === current ? 1 : 0,
           }}
         />
       ))}
 
       {/* Dark overlay */}
       <div style={{
-        position: "absolute", inset: 0, zIndex: 2,
-        background: "linear-gradient(120deg, rgba(8,12,18,0.88) 40%, rgba(8,12,18,0.5) 100%)",
+        position: "absolute",
+        inset: 0,
+        background:
+          "linear-gradient(120deg, rgba(8,12,18,0.88) 40%, rgba(8,12,18,0.5) 100%)",
       }} />
-
-      {/* Nav arrows */}
-      {["prev", "next"].map((dir) => (
-        <button
-          key={dir}
-          onClick={dir === "prev" ? prev : next}
-          style={{
-            position: "absolute",
-            top: "50%",
-            [dir === "prev" ? "left" : "right"]: 24,
-            transform: "translateY(-50%)",
-            zIndex: 10,
-            background: "rgba(31,159,176,0.15)",
-            border: "1px solid rgba(31,159,176,0.4)",
-            color: "#2bc4d8",
-            width: 44,
-            height: 44,
-            borderRadius: "50%",
-            fontSize: 20,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            transition: "background 0.2s",
-            backdropFilter: "blur(4px)",
-          }}
-        >
-          {dir === "prev" ? "‹" : "›"}
-        </button>
-      ))}
 
       {/* Dots */}
       <div style={{
@@ -194,7 +171,6 @@ function HeroCarousel() {
         transform: "translateX(-50%)",
         display: "flex",
         gap: 10,
-        zIndex: 10,
       }}>
         {CAROUSEL_IMAGES.map((_, i) => (
           <button
@@ -204,11 +180,11 @@ function HeroCarousel() {
               width: i === current ? 28 : 8,
               height: 8,
               borderRadius: 4,
-              background: i === current ? "#1f9fb0" : "rgba(255,255,255,0.3)",
+              background:
+                i === current ? "#1f9fb0" : "rgba(255,255,255,0.3)",
               border: "none",
               cursor: "pointer",
               transition: "width 0.3s, background 0.3s",
-              padding: 0,
             }}
           />
         ))}
@@ -319,7 +295,14 @@ export default function HomePage() {
         {/* Nav links */}
         <div style={S.navLinks}>
           {["Track", "Order", "Help"].map((item) => (
-            <a key={item} href={`#${item.toLowerCase()}`} style={S.navLink}>{item}</a>
+            
+            item === "track" ? (
+              <a key={item} href={"/dashboard"} style={S.navLink}>{item}</a>
+            ) : (
+              <a key={item} href={`#${item.toLowerCase()}`} style={S.navLink}>{item}</a>
+            )
+
+            // <a key={item === "track"} href={`#${item.toLowerCase()}`} style={S.navLink}>{item}</a>
           ))}
         </div>
 
@@ -359,7 +342,7 @@ export default function HomePage() {
           </h1>
 
           <p style={S.heroSubtitle}>
-            Real-time GPS wearable for children and elders.<br />
+            Real-time GPS for children and elders.<br />
             Instant geofence alerts. Zero interaction required.
           </p>
 
@@ -369,11 +352,11 @@ export default function HomePage() {
                 <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" fill="white"/>
                 <circle cx="12" cy="9" r="2.5" fill="#1f9fb0"/>
               </svg>
-              Buy Device / Live Track
+              Live Track
             </button>
             <button style={S.btnHeroSecondary}
-              onClick={() => document.getElementById("how-it-works")?.scrollIntoView({ behavior: "smooth" })}>
-              See How It Works ↓
+              onClick={() => document.getElementById("buy-device")?.scrollIntoView({ behavior: "smooth" })}>
+              Buy Device ↓
             </button>
           </div>
 
@@ -395,176 +378,13 @@ export default function HomePage() {
       </section>
 
       {/* ══ GPS TRACK SECTION ════════════════════════════════════════════════ */}
-      <section id="how-it-works" style={S.section}>
-        <div style={S.sectionInner}>
+      <GeofenceSection/>
 
-          {/* Left: text */}
-          <div style={S.featureLeft}>
-            <div style={S.sectionBadge}>📡 GPS Track</div>
-            <h2 style={S.sectionHeading}>Real-Time Location.<br />Every 2 Seconds.</h2>
-            <p style={S.sectionSub}>
-              The ESP32-powered wearable reads GPS coordinates from the NEO-6M module and
-              pushes them to Firebase Realtime Database. Your dashboard updates instantly
-              via WebSocket — no refresh needed, no delay.
-            </p>
-            <ul style={S.featureList}>
-              {GPS_FEATURES.map((f) => (
-                <li key={f} style={S.featureItem}>
-                  <span style={S.featureDot} />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Right: device showcase placeholder */}
-          <div style={S.featureRight}>
-            <div style={S.deviceShowcase}>
-              <div style={S.deviceMockMap}>
-                {/* Animated map mock */}
-                <div style={S.mockMapGrid} />
-                {/* Safe zone circle */}
-                <div style={S.mockCircle} />
-                {/* Pulsing device dot */}
-                <div style={S.mockDotWrap}>
-                  <div style={S.mockDotRipple} />
-                  <div style={S.mockDot} />
-                </div>
-                {/* Distance badge */}
-                <div style={S.mockBadge}>
-                  <span style={{ color: "#22c55e", fontWeight: 700 }}>✅</span>
-                  &nbsp;187m · Inside Zone
-                </div>
-              </div>
-              <div style={S.deviceInfo}>
-                <div style={S.deviceInfoRow}>
-                  <span style={{ color: "#4a6a88" }}>Device</span>
-                  <code style={{ color: "#2bc4d8", fontSize: 12 }}>child_rahul_device</code>
-                </div>
-                <div style={S.deviceInfoRow}>
-                  <span style={{ color: "#4a6a88" }}>Latitude</span>
-                  <code style={{ color: "#e2eaf4", fontSize: 12 }}>20.016301</code>
-                </div>
-                <div style={S.deviceInfoRow}>
-                  <span style={{ color: "#4a6a88" }}>Longitude</span>
-                  <code style={{ color: "#e2eaf4", fontSize: 12 }}>73.786712</code>
-                </div>
-                <div style={S.deviceInfoRow}>
-                  <span style={{ color: "#4a6a88" }}>Update</span>
-                  <code style={{ color: "#f59e0b", fontSize: 12 }}>Every 2 sec</code>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ══ GEOFENCE SECTION ═════════════════════════════════════════════════ */}
-      <section style={{ ...S.section, background: "rgba(15,28,46,0.6)" }}>
-        <div style={{ ...S.sectionInner, flexDirection: "row-reverse" }}>
-
-          {/* Right: text */}
-          <div style={S.featureLeft}>
-            <div style={{ ...S.sectionBadge, background: "rgba(245,158,11,0.1)", color: "#f59e0b", borderColor: "rgba(245,158,11,0.3)" }}>
-              🛡 Geofence (Safe Zone)
-            </div>
-            <h2 style={S.sectionHeading}>Draw a Boundary.<br />We Guard It.</h2>
-            <p style={S.sectionSub}>
-              Tap anywhere on the map to place a virtual safe zone. The moment your child
-              or elder steps outside, your phone screams — siren, banner, push notification.
-              All processing happens in the browser. Zero server round-trip.
-            </p>
-            <ul style={S.featureList}>
-              {GEO_FEATURES.map((f) => (
-                <li key={f} style={S.featureItem}>
-                  <span style={{ ...S.featureDot, background: "#f59e0b" }} />
-                  <span>{f}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Left: animated geofence visualization */}
-          <div style={S.featureRight}>
-            <div style={S.geoShowcase}>
-              {/* Animated concentric rings */}
-              {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: "absolute",
-                    top: "50%", left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: i * 80 + 60,
-                    height: i * 80 + 60,
-                    borderRadius: "50%",
-                    border: `1.5px solid rgba(31,159,176,${0.4 - i * 0.1})`,
-                    animation: `geoRing ${2 + i * 0.5}s ease-in-out infinite alternate`,
-                  }}
-                />
-              ))}
-              {/* Zone fill */}
-              <div style={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: "translate(-50%, -50%)",
-                width: 140, height: 140,
-                borderRadius: "50%",
-                background: "rgba(31,159,176,0.08)",
-                border: "2px dashed rgba(31,159,176,0.5)",
-              }} />
-              {/* Center pin */}
-              <div style={{
-                position: "absolute",
-                top: "50%", left: "50%",
-                transform: "translate(-50%, -60%)",
-                width: 20, height: 20,
-                background: "#1f9fb0",
-                borderRadius: "50% 50% 50% 0",
-                transformOrigin: "center bottom",
-                rotate: "-45deg",
-              }} />
-              {/* Alert badge */}
-              <div style={{
-                position: "absolute",
-                bottom: 24, left: "50%",
-                transform: "translateX(-50%)",
-                background: "rgba(239,68,68,0.15)",
-                border: "1px solid rgba(239,68,68,0.5)",
-                borderRadius: 8,
-                padding: "6px 14px",
-                color: "#ef4444",
-                fontSize: 13,
-                fontFamily: "'Exo 2', sans-serif",
-                fontWeight: 700,
-                whiteSpace: "nowrap",
-                animation: "alertPulse 1.5s ease infinite",
-              }}>
-                🚨 BREACH DETECTED — 412m
-              </div>
-              {/* Info label */}
-              <div style={{
-                position: "absolute",
-                top: 16, right: 16,
-                background: "rgba(31,159,176,0.1)",
-                border: "1px solid rgba(31,159,176,0.3)",
-                borderRadius: 8,
-                padding: "5px 12px",
-                color: "#2bc4d8",
-                fontSize: 12,
-                fontFamily: "'Share Tech Mono', monospace",
-              }}>
-                Radius: 250m
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
+    
+      
 
       {/* ══ REVIEWS SECTION ══════════════════════════════════════════════════ */}
-      <section style={S.reviewsSection}>
+      <section id={"buy-device"} style={S.reviewsSection}>
         <div style={S.reviewsHeader}>
           <div style={{ ...S.sectionBadge, marginBottom: 16 }}>💬 Parent Reviews</div>
           <h2 style={{ ...S.sectionHeading, textAlign: "center", marginBottom: 8 }}>
@@ -577,27 +397,7 @@ export default function HomePage() {
         <ReviewsScroll />
       </section>
 
-      {/* ══ CTA BANNER ════════════════════════════════════════════════════════ */}
-      <section style={S.ctaBanner}>
-        <div style={{
-          position: "absolute", inset: 0,
-          background: "radial-gradient(ellipse at 50% 50%, rgba(31,159,176,0.15) 0%, transparent 70%)",
-        }} />
-        <h2 style={{ ...S.sectionHeading, textAlign: "center", fontSize: 34, marginBottom: 12, position: "relative" }}>
-          Ready to Protect What Matters?
-        </h2>
-        <p style={{ ...S.sectionSub, textAlign: "center", marginBottom: 32, position: "relative" }}>
-          Set up in under 5 minutes. No technical knowledge required.
-        </p>
-        <div style={{ display: "flex", gap: 16, justifyContent: "center", position: "relative" }}>
-          <button style={S.btnHeroPrimary} onClick={() => navigate("/login")}>
-            Start Tracking Free
-          </button>
-          <button style={S.btnHeroSecondary}>
-            View Dashboard Demo
-          </button>
-        </div>
-      </section>
+      <FeaturesSection/>
 
       {/* ══ FOOTER ════════════════════════════════════════════════════════════ */}
       <footer style={S.footer}>
@@ -615,7 +415,7 @@ export default function HomePage() {
               <span style={{ ...S.navLogoText, fontSize: 18 }}>Fence<span style={{ color: "#1f9fb0" }}>Track</span></span>
             </div>
             <p style={{ color: "#4a6a88", fontSize: 13, lineHeight: 1.7, maxWidth: 260, fontFamily: "'Exo 2', sans-serif" }}>
-              Smart GPS wearable for children and elders. Designed for India's mass gatherings — Kumbh Mela, pilgrimages, fairs.
+              Smart GPS for children and elders. Designed for India's mass gatherings — Kumbh Mela, pilgrimages, fairs.
             </p>
             <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
               {["GitHub", "Twitter", "LinkedIn"].map((s) => (
@@ -719,6 +519,7 @@ const styles = {
     fontFamily: "'Exo 2', sans-serif",
     color: "#e2eaf4",
     overflowX: "hidden",
+    ffontFamily: "'Poppins', sans-serif"
   },
 
   // Navbar
@@ -805,6 +606,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     overflow: "hidden",
+    fontFamily: "'Poppins', sans-serif"
   },
   heroContent: {
     position: "relative",
@@ -812,6 +614,7 @@ const styles = {
     padding: "0 80px",
     maxWidth: 680,
     animation: "heroFadeUp 0.8s ease",
+    fontFamily: "'Poppins', sans-serif"
   },
   heroBadge: {
     display: "inline-flex",
